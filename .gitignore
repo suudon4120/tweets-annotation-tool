@@ -1,0 +1,14 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Data files
+data/raw/*
+data/batches/*
+data/results/*
+
+# Streamlit config
+.streamlit/secrets.toml
+
+# Mac OS
+.DS_Store
