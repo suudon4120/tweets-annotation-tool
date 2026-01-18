@@ -8,7 +8,7 @@ RAW_DIR = DATA_DIR / "raw"
 BATCH_DIR = DATA_DIR / "batches"
 RESULTS_DIR = DATA_DIR / "results"
 
-def load_raw_data(filename="KYOTO2_batch_merged_tagged.csv"):
+def load_raw_data(filename="KYOTO2_batch_tagged.csv"):
     """
     元データ (Raw) を読み込む
     """

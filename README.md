@@ -23,7 +23,7 @@ pip install -r requirements.txt
 ```
 
 ### 2. データの配置
-`data/raw/` フォルダを作成し（存在しない場合）、元データとなるCSVファイル（`KYOTO2_batch_merged_tagged.csv`）を配置してください。
+`data/raw/` フォルダを作成し（存在しない場合）、元データとなるCSVファイル（`KYOTO2_batch_tagged.csv`）を配置してください。
 
 ## 🖥️ 使い方
 

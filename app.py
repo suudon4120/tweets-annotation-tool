@@ -7,7 +7,7 @@ from src.sampler import create_sample_batch
 OPTIONS = {
     "is_location_related": [True, False],
     "subjectivity": ["N/A", "主観", "客観"],
-    "sentiment_or_noise": ["N/A", "ポジティブ", "ネガティブ", "ノイズ(クーポン情報)", "ノイズ(単体場所情報)", "ノイズ(広告・宣伝)", "ノイズ(客観的記述)"],
+    "sentiment_or_noise": ["N/A", "ポジティブ", "ネガティブ", "ノイズ"],
     "user_attribute": ["N/A", "観光客", "住民", "それ以外"]
 }
 

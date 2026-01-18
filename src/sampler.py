@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from .data_handler import load_raw_data, save_batch_data
 
-def create_sample_batch(n_samples, seed, annotator_name, source_file="KYOTO2_batch_merged_tagged.csv"):
+def create_sample_batch(n_samples, seed, annotator_name, source_file="KYOTO2_batch_tagged.csv"):
     """
     Rawデータからサンプリングを行い，アノテーション用のカラムを追加して保存する
     """
