@@ -29,31 +29,60 @@ app_mode = st.sidebar.radio(
 if app_mode == "Sampling":
     st.title("📂 新規アノテーションセットの作成")
     st.markdown("""
-                元データからランダムにツイートを抽出し，作業用ファイルを作成します．
-                """)
+    元データからツイートを抽出し、作業用ファイルを作成します。
+    """)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        annotator_name = st.text_input("作業者名 (半角英数推奨)", value="user1")
+        seed = st.number_input("乱数シード (再現性のため)", value=42, step=1)
+    with col2:
+        n_samples = st.number_input("抽出件数", value=100, step=10)
     
-    with st.form("sampling_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            annotator_name = st.text_input("作業者名 (半角英数推奨)", value="user1")
-            seed = st.number_input("乱数シード", value=42, step=1)
-        with col2:
-            n_samples = st.number_input("抽出件数", value=100, step=10)
+    st.markdown("---")
+    st.subheader("抽出オプション")
+    
+    # サンプリング手法の選択
+    sampling_method = st.radio(
+        "サンプリング手法", 
+        ["単純ランダム (Simple Random)", "層化抽出 (Stratified)"],
+        help="層化抽出は、指定したカラムの比率（分布）を保ったままサンプリングします。"
+    )
+    
+    # 層化抽出の場合のみ、カラム選択を表示
+    stratify_col = None
+    if sampling_method == "層化抽出 (Stratified)":
+        # 選択肢として適切なカラムのみ提示（IDやTextは除外）
+        strat_options = [
+            'user_attribute', 
+            'sentiment_or_noise', 
+            'subjectivity', 
+            'is_location_related'
+        ]
+        stratify_col = st.selectbox("どのカラムの比率を維持しますか？", strat_options)
 
-        submitted = st.form_submit_button("データセットを作成")
-
-        if submitted:
-            if not annotator_name:
-                st.error("作業者名を入力してください．")
-            else:
-                try:
-                    filename, count = create_sample_batch(n_samples, seed, annotator_name)
-                    st.success(f"✅️ 作成完了! ファイル名: {filename} ({count}件)")
-                    st.info("「Annotation」モードに切り替えて作業を開始してください．")
-                except FileNotFoundError:
-                    st.error("❌️ 元データが見つかりません．data/raw/ フォルダを確認してください．")
-                except Exception as e:
-                    st.error(f"エラーが発生しました: {e}")
+    if st.button("データセットを作成", type="primary"):
+        if not annotator_name:
+            st.error("作業者名を入力してください。")
+        else:
+            try:
+                # ここで引数を渡す
+                filename, count = create_sample_batch(
+                    n_samples, 
+                    seed, 
+                    annotator_name, 
+                    stratify_col=stratify_col  # 追加
+                )
+                st.success(f"✅ 作成完了! ファイル名: {filename} ({count}件)")
+                
+                if stratify_col:
+                    st.info(f"ℹ️ '{stratify_col}' の分布に基づいて層化抽出を行いました。")
+                    
+                st.info("「Annotation」モードに切り替えて作業を開始してください。")
+            except FileNotFoundError:
+                st.error("❌ 元データが見つかりません。")
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
 
 # Annotation Mode (タグ付け作業)
 elif app_mode == "Annotation":
