@@ -140,7 +140,7 @@ elif app_mode == "Annotation":
     st.info(row['text'])
 
     def get_default_value(col_name, options):
-        # 既に人で入力があればそれを使う
+        # 既に人手入力があればそれを使う
         human_val = row.get(f"human_{col_name}")
         if pd.notna(human_val) and human_val in options:
             return options.index(human_val)
@@ -170,7 +170,14 @@ elif app_mode == "Annotation":
                 "正解を選択",
                 OPTIONS["is_location_related"],
                 index=get_default_value("is_location_related", OPTIONS["is_location_related"]),
-                horizontal=True
+                horizontal=True,
+                key=f"radio_loc_{idx}"
+            )
+            # 迷いフラグ
+            unc_loc = st.checkbox(
+                "迷った (Uncertain)", 
+                value=bool(row.get('uncertain_is_location_related', 0)),
+                key=f"chk_loc_{idx}"
             )
         
         # 主観客観判定
@@ -181,6 +188,12 @@ elif app_mode == "Annotation":
                 "正解を選択",
                 OPTIONS["subjectivity"],
                 index=get_default_value("subjectivity", OPTIONS["subjectivity"]),
+                key=f"sel_sub_{idx}"
+            )
+            unc_sub = st.checkbox(
+                "迷った", 
+                value=bool(row.get('uncertain_subjectivity', 0)),
+                key=f"chk_sub_{idx}"
             )
         
         st.markdown("---")
@@ -194,6 +207,12 @@ elif app_mode == "Annotation":
                 "正解を選択",
                 OPTIONS["sentiment_or_noise"],
                 index=get_default_value("sentiment_or_noise", OPTIONS["sentiment_or_noise"]),
+                key=f"sel_sent_{idx}"
+            )
+            unc_sent = st.checkbox(
+                "迷った", 
+                value=bool(row.get('uncertain_sentiment_or_noise', 0)),
+                key=f"chk_sent_{idx}"
             )
 
         # 居住者判定
@@ -204,6 +223,12 @@ elif app_mode == "Annotation":
                 "正解を選択",
                 OPTIONS["user_attribute"],
                 index=get_default_value("user_attribute", OPTIONS["user_attribute"]),
+                key=f"sel_attr_{idx}"
+            )
+            unc_attr = st.checkbox(
+                "迷った", 
+                value=bool(row.get('uncertain_user_attribute', 0)),
+                key=f"chk_attr_{idx}"
             )
         
         st.markdown("---")
@@ -223,6 +248,10 @@ elif app_mode == "Annotation":
             st.session_state.df.at[idx, 'human_subjectivity'] = val_sub
             st.session_state.df.at[idx, 'human_sentiment_or_noise'] = val_sent
             st.session_state.df.at[idx, 'human_user_attribute'] = val_attr
+            st.session_state.df.at[idx, 'uncertain_is_location_related'] = 1 if unc_loc else 0
+            st.session_state.df.at[idx, 'uncertain_subjectivity'] = 1 if unc_sub else 0
+            st.session_state.df.at[idx, 'uncertain_sentiment_or_noise'] = 1 if unc_sent else 0
+            st.session_state.df.at[idx, 'uncertain_user_attribute'] = 1 if unc_attr else 0
             st.session_state.df.at[idx, 'comments'] = comments
             st.session_state.df.at[idx, 'is_completed'] = True
 

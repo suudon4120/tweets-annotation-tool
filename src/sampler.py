@@ -52,7 +52,8 @@ def create_sample_batch(n_samples, seed, annotator_name, source_file="KYOTO2_bat
     
     for col in target_columns:
         sampled_df[f'human_{col}'] = None
-        
+        sampled_df[f'uncertain_{col}'] = 0
+    
     sampled_df['annotator_name'] = annotator_name
     sampled_df['is_completed'] = False
     sampled_df['comments'] = ""
