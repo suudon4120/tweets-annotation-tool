@@ -29,31 +29,60 @@ app_mode = st.sidebar.radio(
 if app_mode == "Sampling":
     st.title("📂 新規アノテーションセットの作成")
     st.markdown("""
-                元データからランダムにツイートを抽出し，作業用ファイルを作成します．
-                """)
+    元データからツイートを抽出し、作業用ファイルを作成します。
+    """)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        annotator_name = st.text_input("作業者名 (半角英数推奨)", value="user1")
+        seed = st.number_input("乱数シード (再現性のため)", value=42, step=1)
+    with col2:
+        n_samples = st.number_input("抽出件数", value=100, step=10)
     
-    with st.form("sampling_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            annotator_name = st.text_input("作業者名 (半角英数推奨)", value="user1")
-            seed = st.number_input("乱数シード", value=42, step=1)
-        with col2:
-            n_samples = st.number_input("抽出件数", value=100, step=10)
+    st.markdown("---")
+    st.subheader("抽出オプション")
+    
+    # サンプリング手法の選択
+    sampling_method = st.radio(
+        "サンプリング手法", 
+        ["単純ランダム (Simple Random)", "層化抽出 (Stratified)"],
+        help="層化抽出は、指定したカラムの比率（分布）を保ったままサンプリングします。"
+    )
+    
+    # 層化抽出の場合のみ、カラム選択を表示
+    stratify_col = None
+    if sampling_method == "層化抽出 (Stratified)":
+        # 選択肢として適切なカラムのみ提示（IDやTextは除外）
+        strat_options = [
+            'user_attribute', 
+            'sentiment_or_noise', 
+            'subjectivity', 
+            'is_location_related'
+        ]
+        stratify_col = st.selectbox("どのカラムの比率を維持しますか？", strat_options)
 
-        submitted = st.form_submit_button("データセットを作成")
-
-        if submitted:
-            if not annotator_name:
-                st.error("作業者名を入力してください．")
-            else:
-                try:
-                    filename, count = create_sample_batch(n_samples, seed, annotator_name)
-                    st.success(f"✅️ 作成完了! ファイル名: {filename} ({count}件)")
-                    st.info("「Annotation」モードに切り替えて作業を開始してください．")
-                except FileNotFoundError:
-                    st.error("❌️ 元データが見つかりません．data/raw/ フォルダを確認してください．")
-                except Exception as e:
-                    st.error(f"エラーが発生しました: {e}")
+    if st.button("データセットを作成", type="primary"):
+        if not annotator_name:
+            st.error("作業者名を入力してください。")
+        else:
+            try:
+                # ここで引数を渡す
+                filename, count = create_sample_batch(
+                    n_samples, 
+                    seed, 
+                    annotator_name, 
+                    stratify_col=stratify_col  # 追加
+                )
+                st.success(f"✅ 作成完了! ファイル名: {filename} ({count}件)")
+                
+                if stratify_col:
+                    st.info(f"ℹ️ '{stratify_col}' の分布に基づいて層化抽出を行いました。")
+                    
+                st.info("「Annotation」モードに切り替えて作業を開始してください。")
+            except FileNotFoundError:
+                st.error("❌ 元データが見つかりません。")
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
 
 # Annotation Mode (タグ付け作業)
 elif app_mode == "Annotation":
@@ -111,7 +140,7 @@ elif app_mode == "Annotation":
     st.info(row['text'])
 
     def get_default_value(col_name, options):
-        # 既に人で入力があればそれを使う
+        # 既に人手入力があればそれを使う
         human_val = row.get(f"human_{col_name}")
         if pd.notna(human_val) and human_val in options:
             return options.index(human_val)
@@ -141,7 +170,14 @@ elif app_mode == "Annotation":
                 "正解を選択",
                 OPTIONS["is_location_related"],
                 index=get_default_value("is_location_related", OPTIONS["is_location_related"]),
-                horizontal=True
+                horizontal=True,
+                key=f"radio_loc_{idx}"
+            )
+            # 迷いフラグ
+            unc_loc = st.checkbox(
+                "迷った (Uncertain)", 
+                value=bool(row.get('uncertain_is_location_related', 0)),
+                key=f"chk_loc_{idx}"
             )
         
         # 主観客観判定
@@ -152,6 +188,12 @@ elif app_mode == "Annotation":
                 "正解を選択",
                 OPTIONS["subjectivity"],
                 index=get_default_value("subjectivity", OPTIONS["subjectivity"]),
+                key=f"sel_sub_{idx}"
+            )
+            unc_sub = st.checkbox(
+                "迷った", 
+                value=bool(row.get('uncertain_subjectivity', 0)),
+                key=f"chk_sub_{idx}"
             )
         
         st.markdown("---")
@@ -165,6 +207,12 @@ elif app_mode == "Annotation":
                 "正解を選択",
                 OPTIONS["sentiment_or_noise"],
                 index=get_default_value("sentiment_or_noise", OPTIONS["sentiment_or_noise"]),
+                key=f"sel_sent_{idx}"
+            )
+            unc_sent = st.checkbox(
+                "迷った", 
+                value=bool(row.get('uncertain_sentiment_or_noise', 0)),
+                key=f"chk_sent_{idx}"
             )
 
         # 居住者判定
@@ -175,6 +223,12 @@ elif app_mode == "Annotation":
                 "正解を選択",
                 OPTIONS["user_attribute"],
                 index=get_default_value("user_attribute", OPTIONS["user_attribute"]),
+                key=f"sel_attr_{idx}"
+            )
+            unc_attr = st.checkbox(
+                "迷った", 
+                value=bool(row.get('uncertain_user_attribute', 0)),
+                key=f"chk_attr_{idx}"
             )
         
         st.markdown("---")
@@ -194,6 +248,10 @@ elif app_mode == "Annotation":
             st.session_state.df.at[idx, 'human_subjectivity'] = val_sub
             st.session_state.df.at[idx, 'human_sentiment_or_noise'] = val_sent
             st.session_state.df.at[idx, 'human_user_attribute'] = val_attr
+            st.session_state.df.at[idx, 'uncertain_is_location_related'] = 1 if unc_loc else 0
+            st.session_state.df.at[idx, 'uncertain_subjectivity'] = 1 if unc_sub else 0
+            st.session_state.df.at[idx, 'uncertain_sentiment_or_noise'] = 1 if unc_sent else 0
+            st.session_state.df.at[idx, 'uncertain_user_attribute'] = 1 if unc_attr else 0
             st.session_state.df.at[idx, 'comments'] = comments
             st.session_state.df.at[idx, 'is_completed'] = True
 
